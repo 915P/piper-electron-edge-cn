@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+# piper-tts — 命令行调用本机 TTS（引擎按需解压到 /tmp，临时调用）
+#
+# 用法:
+#   piper-tts "你好世界"                       # 默认音色 xiao_ya → ./tts_out.wav
+#   piper-tts -v chaowen -o a.wav "文本"       # 指定本地音色（短名/全名均可）
+#   piper-tts -v edge:zh-CN-XiaoxiaoNeural "文本"   # 微软云端音色 → .mp3（需联网）
+#   echo 文本 | piper-tts                      # 管道输入
+#   piper-tts -l                               # 列出全部音色
+#   piper-tts -h                               # 本帮助
+#
+# 首次调用会把桌面 AppImage 内的引擎解压到 /tmp/piper-tts-engine（约 1GB，
+# 供并发复用）。注意：本机 /tmp 在根分区上，重启【不会】自动清空；
+# 手动清 rm -rf /tmp/piper-tts-engine 即可（下次调用会重新解压）。
+set -euo pipefail
+
+CACHE="${PIPER_TTS_CACHE:-/tmp/piper-tts-engine}"
+LOCK="$CACHE.lock"
+OUT=""; VOICE="zh_CN-xiao_ya-medium"; TEXT=""; LIST=""
+
+usage() { sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; }
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -o|--output) OUT="$2"; shift 2 ;;
+    -v|--voice)  VOICE="$2"; shift 2 ;;
+    -l|--list)   LIST=1; shift ;;
+    -h|--help)   usage; exit 0 ;;
+    -*) echo "未知参数: $1（-h 看帮助）" >&2; exit 2 ;;
+    *)  TEXT="$1"; shift ;;
+  esac
+done
+
+find_appimage() {
+  local c
+  for c in "$HOME/Desktop/Piper TTS" "$HOME/Desktop"/Piper-TTS*.AppImage "$HOME/Desktop"/*[Pp]iper*; do
+    [[ -f "$c" && -x "$c" ]] && { printf '%s' "$c"; return 0; }
+  done
+  return 1
+}
+
+ensure_engine() {
+  [[ -x "$CACHE/engine/piper" && -d "$CACHE/voices" ]] && return 0
+  if mkdir "$LOCK" 2>/dev/null; then
+    trap 'rmdir "$LOCK" 2>/dev/null || true' EXIT
+    local app tmp
+    app="$(find_appimage)" || { echo "piper-tts: 找不到桌面 AppImage" >&2; exit 1; }
+    tmp="$(mktemp -d "$CACHE.tmp.XXXXXX")"
+    ( cd "$tmp" && "$app" --appimage-extract >/dev/null )
+    rm -rf "$CACHE"
+    mkdir -p "$CACHE"
+    mv "$tmp/squashfs-root/resources/engine" "$CACHE/engine"
+    mv "$tmp/squashfs-root/resources/voices" "$CACHE/voices"
+    rm -rf "$tmp"
+    rmdir "$LOCK" 2>/dev/null || true
+    trap - EXIT
+  else
+    # 另一进程正在解压：等待其完成
+    local i
+    for i in $(seq 1 180); do
+      [[ -x "$CACHE/engine/piper" && -d "$CACHE/voices" ]] && return 0
+      sleep 1
+    done
+    echo "piper-tts: 等待引擎解压超时" >&2; exit 1
+  fi
+}
+
+ensure_engine
+
+if [[ -n "$LIST" ]]; then
+  echo "本地音色（-v 短名或完整文件名）:"
+  find "$CACHE/voices" -name '*.onnx' -printf '  %f\n' | sed 's/\.onnx$//' | sort
+  echo "云端音色（-v edge:<voice>，需联网）:"
+  echo "  edge:zh-CN-XiaoxiaoNeural  edge:zh-CN-YunxiNeural  edge:zh-CN-YunyangNeural"
+  echo "  edge:en-US-JennyNeural  edge:en-US-GuyNeural  ...（微软共 300+）"
+  exit 0
+fi
+
+if [[ -z "$TEXT" && ! -t 0 ]]; then TEXT="$(cat)"; fi
+if [[ -z "$TEXT" ]]; then echo "piper-tts: 没有文本（用参数或 stdin）" >&2; exit 2; fi
+
+if [[ "$VOICE" == edge:* ]]; then
+  OUT="${OUT:-$PWD/tts_out.mp3}"
+  case "$OUT" in *.mp3) ;; *) OUT="${OUT%.*}.mp3" ;; esac
+  E="$CACHE/engine"
+  LD_LIBRARY_PATH="$E/python/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" \
+    PYTHONNOUSERSITE=1 HF_HOME="$E/hf-cache" HF_HUB_OFFLINE=1 HF_ENDPOINT=https://hf-mirror.com \
+    "$E/python/bin/python3.12" -m edge_tts --voice "${VOICE#edge:}" --text "$TEXT" --write-media "$OUT"
+  echo "$OUT"
+  exit 0
+fi
+
+model=""
+if [[ -f "$VOICE" ]]; then model="$VOICE"
+elif [[ -f "$CACHE/voices/$VOICE" ]]; then model="$CACHE/voices/$VOICE"
+elif [[ -f "$CACHE/voices/$VOICE.onnx" ]]; then model="$CACHE/voices/$VOICE.onnx"
+else
+  m="$(find "$CACHE/voices" -name "*${VOICE}*.onnx" | head -1 || true)"
+  [[ -n "$m" ]] && model="$m"
+fi
+[[ -n "$model" ]] || { echo "piper-tts: 找不到音色 '$VOICE'（-l 看列表）" >&2; exit 2; }
+
+OUT="${OUT:-$PWD/tts_out.wav}"
+echo "$TEXT" | TRANSFORMERS_VERBOSITY=error "$CACHE/engine/piper" --model "$model" --output_file "$OUT"
+echo "$OUT"

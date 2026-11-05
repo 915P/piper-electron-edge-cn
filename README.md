@@ -36,6 +36,20 @@ npm ci --registry=https://registry.npmmirror.com/
 npx electron-builder --linux AppImage
 ```
 
+## 命令行（CLI）
+
+仓库提供 [`cli/piper-tts`](cli/piper-tts)：任何脚本/程序都能调用本机 TTS，引擎按需从 AppImage 解压到临时目录复用（换机器零残留）。
+
+```bash
+mkdir -p ~/.local/bin && cp cli/piper-tts ~/.local/bin/ && chmod +x ~/.local/bin/piper-tts
+
+piper-tts "你好世界"                            # 本地音色 → ./tts_out.wav
+piper-tts -v chaowen -o a.wav "文本"            # 指定音色
+piper-tts -v edge:zh-CN-XiaoxiaoNeural "文本"   # 云端 → mp3（联网）
+echo 文本 | piper-tts                           # 管道输入
+piper-tts -l                                    # 音色列表
+```
+
 ## 音库与权重（重要）
 
 本仓库**只含代码，不含任何模型权重**：
