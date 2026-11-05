@@ -1,22 +1,23 @@
 #!/usr/bin/env bash
-# piper-tts — 命令行调用本机 TTS（引擎按需解压到 /tmp，临时调用）
+# piper-tts — 命令行调用本机 TTS（默认云端 edge-tts；本地音库按需解压）
 #
 # 用法:
-#   piper-tts "你好世界"                       # 默认音色 xiao_ya → ./tts_out.wav
-#   piper-tts -v chaowen -o a.wav "文本"       # 指定本地音色（短名/全名均可）
-#   piper-tts -v edge:zh-CN-XiaoxiaoNeural "文本"   # 微软云端音色 → .mp3（需联网）
-#   echo 文本 | piper-tts                      # 管道输入
-#   piper-tts -l                               # 列出全部音色
-#   piper-tts -h                               # 本帮助
+#   piper-tts "你好世界"                        # 默认云端晓晓（免 -v）→ ./tts_out.mp3
+#   piper-tts -v edge:zh-CN-YunxiNeural "文本"  # 其他微软云端音色 → .mp3（需联网）
+#   piper-tts -v xiao_ya -o a.wav "文本"        # 本地音色（按需解压音库）→ .wav
+#   echo 文本 | piper-tts                       # 管道输入
+#   piper-tts -l                                # 列出全部音色
+#   piper-tts -h                                # 本帮助
 #
-# 首次调用会把桌面 AppImage 内的引擎解压到 /tmp/piper-tts-engine（约 1GB，
-# 供并发复用）。注意：本机 /tmp 在根分区上，重启【不会】自动清空；
-# 手动清 rm -rf /tmp/piper-tts-engine 即可（下次调用会重新解压）。
+# 引擎按需解压到 /tmp/piper-tts-engine：Python 运行时（约 605M，任何调用都需要，
+# 含 edge_tts 模块）首次自动解压 ~10 秒；本地音库（约 417M）仅在用本地音色或
+# -l 时才解压。注意：本机 /tmp 在根分区，重启【不会】自动清空；手动清
+# rm -rf /tmp/piper-tts-engine 即可（下次调用会重新解压）。
 set -euo pipefail
 
 CACHE="${PIPER_TTS_CACHE:-/tmp/piper-tts-engine}"
 LOCK="$CACHE.lock"
-OUT=""; VOICE="zh_CN-xiao_ya-medium"; TEXT=""; LIST=""
+OUT=""; VOICE="edge:zh-CN-XiaoxiaoNeural"; TEXT=""; LIST=""
 
 usage() { sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; }
 
@@ -39,35 +40,45 @@ find_appimage() {
   return 1
 }
 
-ensure_engine() {
-  [[ -x "$CACHE/engine/piper" && -d "$CACHE/voices" ]] && return 0
+have_engine() { [[ -x "$CACHE/engine/piper" ]]; }
+have_voices() { [[ -d "$CACHE/voices" ]]; }
+
+# ensure_part engine|voices —— 只解压需要的部分，锁并发复用
+ensure_part() {
+  local want="$1"
+  if [[ "$want" == engine ]]; then have_engine && return 0; else have_voices && return 0; fi
   if mkdir "$LOCK" 2>/dev/null; then
     trap 'rmdir "$LOCK" 2>/dev/null || true' EXIT
+    # 拿到锁后重查（别的进程可能刚好解压完）
+    if [[ "$want" == engine ]] && have_engine; then rmdir "$LOCK" 2>/dev/null || true; trap - EXIT; return 0; fi
+    if [[ "$want" == voices ]] && have_voices; then rmdir "$LOCK" 2>/dev/null || true; trap - EXIT; return 0; fi
     local app tmp
     app="$(find_appimage)" || { echo "piper-tts: 找不到桌面 AppImage" >&2; exit 1; }
     tmp="$(mktemp -d "$CACHE.tmp.XXXXXX")"
     ( cd "$tmp" && "$app" --appimage-extract >/dev/null )
-    rm -rf "$CACHE"
     mkdir -p "$CACHE"
-    mv "$tmp/squashfs-root/resources/engine" "$CACHE/engine"
-    mv "$tmp/squashfs-root/resources/voices" "$CACHE/voices"
+    if [[ "$want" == engine ]]; then
+      have_engine || mv "$tmp/squashfs-root/resources/engine" "$CACHE/engine"
+    else
+      have_voices || mv "$tmp/squashfs-root/resources/voices" "$CACHE/voices"
+      have_engine || mv "$tmp/squashfs-root/resources/engine" "$CACHE/engine"
+    fi
     rm -rf "$tmp"
     rmdir "$LOCK" 2>/dev/null || true
     trap - EXIT
-  else
-    # 另一进程正在解压：等待其完成
-    local i
-    for i in $(seq 1 180); do
-      [[ -x "$CACHE/engine/piper" && -d "$CACHE/voices" ]] && return 0
-      sleep 1
-    done
-    echo "piper-tts: 等待引擎解压超时" >&2; exit 1
+    return 0
   fi
+  # 另一进程正在解压：等待其完成
+  local i
+  for i in $(seq 1 300); do
+    if [[ "$want" == engine ]]; then have_engine && return 0; else have_voices && return 0; fi
+    sleep 1
+  done
+  echo "piper-tts: 等待引擎解压超时" >&2; exit 1
 }
 
-ensure_engine
-
 if [[ -n "$LIST" ]]; then
+  ensure_part voices
   echo "本地音色（-v 短名或完整文件名）:"
   find "$CACHE/voices" -name '*.onnx' -printf '  %f\n' | sed 's/\.onnx$//' | sort
   echo "云端音色（-v edge:<voice>，需联网）:"
@@ -80,6 +91,7 @@ if [[ -z "$TEXT" && ! -t 0 ]]; then TEXT="$(cat)"; fi
 if [[ -z "$TEXT" ]]; then echo "piper-tts: 没有文本（用参数或 stdin）" >&2; exit 2; fi
 
 if [[ "$VOICE" == edge:* ]]; then
+  ensure_part engine
   OUT="${OUT:-$PWD/tts_out.mp3}"
   case "$OUT" in *.mp3) ;; *) OUT="${OUT%.*}.mp3" ;; esac
   E="$CACHE/engine"
@@ -89,6 +101,9 @@ if [[ "$VOICE" == edge:* ]]; then
   echo "$OUT"
   exit 0
 fi
+
+ensure_part engine
+ensure_part voices
 
 model=""
 if [[ -f "$VOICE" ]]; then model="$VOICE"
