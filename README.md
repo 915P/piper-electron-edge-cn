@@ -41,14 +41,16 @@ npx electron-builder --linux AppImage
 仓库提供 [`cli/piper-tts`](cli/piper-tts)：任何脚本/程序都能调用本机 TTS，引擎按需从 AppImage 解压到临时目录复用（换机器零残留）。
 
 ```bash
-mkdir -p ~/.local/bin && cp cli/piper-tts ~/.local/bin/ && chmod +x ~/.local/bin/piper-tts
+cp cli/piper-tts /tmp/piper-tts && chmod +x /tmp/piper-tts   # 放置位置自定，用完整路径调用
 
-piper-tts "你好世界"                            # 本地音色 → ./tts_out.wav
-piper-tts -v chaowen -o a.wav "文本"            # 指定音色
-piper-tts -v edge:zh-CN-XiaoxiaoNeural "文本"   # 云端 → mp3（联网）
-echo 文本 | piper-tts                           # 管道输入
-piper-tts -l                                    # 音色列表
+/tmp/piper-tts "你好世界"                            # 本地音色 → ./tts_out.wav
+/tmp/piper-tts -v chaowen -o a.wav "文本"            # 指定音色
+/tmp/piper-tts -v edge:zh-CN-XiaoxiaoNeural "文本"   # 云端 → mp3（联网）
+echo 文本 | /tmp/piper-tts                           # 管道输入
+/tmp/piper-tts -l                                    # 音色列表
 ```
+
+首次调用会把 AppImage 内引擎解压到 `/tmp/piper-tts-engine`（约 1GB，`PIPER_TTS_CACHE` 可改位置）。
 
 ## 音库与权重（重要）
 
