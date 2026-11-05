@@ -1,0 +1,177 @@
+/* Piper TTS GUI — 双主题（暗色/亮色/跟随系统），CSS 变量驱动 */
+
+:root {
+    color-scheme: light;
+    --bg: #ffffff;
+    --fg: #1c1c1e;
+    --muted: #6e6e73;
+    --panel-border: #c7c7cc;
+    --input-bg: #ffffff;
+    --input-fg: #1c1c1e;
+    --input-border: #c7c7cc;
+    --btn-bg: #e9e9ee;
+    --btn-fg: #1c1c1e;
+    --btn-border: #b0b0b6;
+    --btn-hover: #dcdce2;
+    --path-bg: #f0f0f2;
+    --track: #cccccc;
+    --accent: #4caf50;
+}
+
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #1c1c1e;
+    --fg: #e9e9ea;
+    --muted: #98989d;
+    --panel-border: #48484a;
+    --input-bg: #2c2c2e;
+    --input-fg: #f2f2f7;
+    --input-border: #48484a;
+    --btn-bg: #3a3a3c;
+    --btn-fg: #f2f2f7;
+    --btn-border: #5a5a5e;
+    --btn-hover: #48484a;
+    --path-bg: #2c2c2e;
+    --track: #3a3a3c;
+}
+
+/* 跟随系统：系统为深色时套用暗色变量 */
+@media (prefers-color-scheme: dark) {
+    :root[data-theme="auto"] {
+        color-scheme: dark;
+        --bg: #1c1c1e;
+        --fg: #e9e9ea;
+        --muted: #98989d;
+        --panel-border: #48484a;
+        --input-bg: #2c2c2e;
+        --input-fg: #f2f2f7;
+        --input-border: #48484a;
+        --btn-bg: #3a3a3c;
+        --btn-fg: #f2f2f7;
+        --btn-border: #5a5a5e;
+        --btn-hover: #48484a;
+        --path-bg: #2c2c2e;
+        --track: #3a3a3c;
+    }
+}
+
+body {
+    font-family: sans-serif;
+    margin: 20px;
+    background: var(--bg);
+    color: var(--fg);
+}
+
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 4px;
+}
+.app-header h2 {
+    margin: 0;
+}
+.theme-label {
+    font-weight: normal;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+.theme-label select {
+    width: auto;
+    margin: 0;
+    padding: 4px 8px;
+}
+
+label, legend {
+    font-weight: bold;
+}
+
+input, textarea, select {
+    width: 100%;
+    margin: 10px 0;
+    padding: 6px;
+    font-size: 1em;
+    background: var(--input-bg);
+    color: var(--input-fg);
+    border: 1px solid var(--input-border);
+    border-radius: 6px;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 1em;
+    margin-top: 10px;
+    background: var(--btn-bg);
+    color: var(--btn-fg);
+    border: 1px solid var(--btn-border);
+    border-radius: 6px;
+    cursor: pointer;
+}
+button:hover:not(:disabled) {
+    background: var(--btn-hover);
+}
+button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+fieldset {
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+}
+
+#status {
+    margin-top: 10px;
+    color: var(--muted);
+}
+
+.inline-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+.inline-group input[type="text"] {
+    flex-grow: 1;
+}
+
+#progressContainer.fade-out {
+    opacity: 0.3;
+    transition: opacity 0.5s ease;
+}
+
+@keyframes blink {
+    0% { opacity: 0.2; }
+    100% { opacity: 1; }
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.fixed-button {
+    width: 220px; /* Adjust as needed for longest label */
+    white-space: nowrap;
+    margin-right: 1rem;
+}
+
+.pathDisplay {
+    flex-grow: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    background: var(--path-bg);
+    color: var(--fg);
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+audio {
+    display: block;
+    width: 100%;
+    margin-top: 10px;
+}

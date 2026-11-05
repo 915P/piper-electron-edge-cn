@@ -1,0 +1,26 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="240" fill="#2563eb" stroke="#1d4ed8" stroke-width="8"/>
+  
+  <!-- Microphone body -->
+  <rect x="226" y="160" width="60" height="120" rx="30" fill="#ffffff" opacity="0.9"/>
+  
+  <!-- Microphone grille lines -->
+  <line x1="236" y1="180" x2="276" y2="180" stroke="#2563eb" stroke-width="2"/>
+  <line x1="236" y1="200" x2="276" y2="200" stroke="#2563eb" stroke-width="2"/>
+  <line x1="236" y1="220" x2="276" y2="220" stroke="#2563eb" stroke-width="2"/>
+  <line x1="236" y1="240" x2="276" y2="240" stroke="#2563eb" stroke-width="2"/>
+  <line x1="236" y1="260" x2="276" y2="260" stroke="#2563eb" stroke-width="2"/>
+  
+  <!-- Microphone stand -->
+  <rect x="248" y="280" width="16" height="60" fill="#ffffff" opacity="0.9"/>
+  <rect x="220" y="340" width="72" height="16" rx="8" fill="#ffffff" opacity="0.9"/>
+  
+  <!-- Sound waves -->
+  <path d="M 320 200 Q 340 220 320 240" stroke="#ffffff" stroke-width="8" fill="none" opacity="0.7"/>
+  <path d="M 340 180 Q 370 210 340 260" stroke="#ffffff" stroke-width="6" fill="none" opacity="0.5"/>
+  <path d="M 360 160 Q 400 200 360 280" stroke="#ffffff" stroke-width="4" fill="none" opacity="0.3"/>
+  
+  <!-- Text "TTS" -->
+  <text x="256" y="420" font-family="Arial, sans-serif" font-size="48" font-weight="bold" text-anchor="middle" fill="#ffffff" opacity="0.9">TTS</text>
+</svg>

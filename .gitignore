@@ -1,0 +1,61 @@
+# Dependencies
+node_modules/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Generated audio files
+*.wav
+piper-output.wav
+out.wav
+
+# Test/temporary files
+null
+*.tmp
+*.temp
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Voice models (large files)
+voices/
+
+# Environment variables
+.env*
+
+# Build output
+dist/
+build/
+
+# Temporary files
+*.tmp
+*.temp
+
+# IDE/Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store?
+ehthumbs.db
+Icon?
+
+# Electron specific
+out/
+
+# Coverage reports (should not be in repo)
+coverage/
+
+# Internal documentation
+WARP.md
+
+# Local engine bundle & local-only artifacts (built per BUILD-RECIPE.md)
+engine/
+*.AppImage
+piper-electron-build-src.tar.gz

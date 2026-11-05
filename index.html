@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Piper TTS 语音合成</title>
+  <script>
+    // 首帧前套用已保存主题，避免闪白
+    document.documentElement.dataset.theme = localStorage.getItem('piperTheme') || 'dark';
+  </script>
+  <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+  <div class="app-header">
+    <h2>Piper TTS 语音合成</h2>
+    <label class="theme-label">主题
+      <select id="themeSelect" title="界面主题">
+        <option value="dark">暗色</option>
+        <option value="light">亮色</option>
+        <option value="auto">跟随系统</option>
+      </select>
+    </label>
+  </div>
+
+  <audio id="audioPlayer" src="" preload="auto"></audio>
+
+  <fieldset style="margin-bottom: 10px;">
+    <legend>通用设置</legend>
+    <div class="row">
+      <button id="choosePiperButton" class="fixed-button">选择 Piper 可执行文件</button>
+      <span id="piperPathDisplay" class="pathDisplay"></span>
+    </div>
+
+    <div class="row">
+      <button id="selectModelDirectoryButton" class="fixed-button">选择音库文件夹</button>
+      <span id="modelDirDisplay" class="pathDisplay"></span>
+    </div>
+  </fieldset>
+
+  <fieldset style="margin-bottom: 10px;">
+    <legend>音色设置</legend>
+    <label for="modelSelect" style="font-weight: normal;">选择音色:</label>
+    <div style="display: flex; gap: 10px; align-items: center;">
+      <select id="modelSelect" style="flex: 1;">
+        <option disabled selected>Loading models...</option>
+      </select>
+      <button id="previewBtn" disabled>试听</button>
+    </div>
+  </fieldset>
+
+  <div style="display: flex; justify-content: space-between; margin: 10px 0;">
+    <!-- Left-aligned buttons -->
+    <div style="display: flex; gap: 10px;">
+      <button id="loadTextFileBtn">加载文本文件…</button>
+      <button id="clearTextBtn">清空文本</button>
+    </div>
+
+    <!-- Right-aligned button -->
+    <button id="resetToDefaultsButton" style="background-color: #f44; color: white;">恢复默认设置</button>
+  </div>
+
+  <div id="textDropZone" style="border: 2px dashed var(--panel-border); padding: 10px; margin-bottom: 10px;">
+  <label for="textInput">待合成文本:</label>
+  <div style="margin-right: 20px;">
+  <textarea id="textInput" style="height: 300px; overflow: auto;" placeholder="在此输入文本…"></textarea>
+  </div>
+  </div>
+
+  <label for="outputPath">输出文件（可选）:</label>
+  <div class="inline-group">
+    <input id="outputPath" type="text" readonly placeholder="留空则输出到临时目录" />
+    <button id="chooseOutputButton">浏览…</button>
+  </div>
+
+  <div style="display: flex; justify-content: space-between; margin: 10px 0;">
+  <button id="speakButton">朗读</button>
+  <div id="audioControls" style="display: none; margin-top: 10px;">
+    <button id="playAudioButton">▶️ 播放</button>
+    <button id="pauseAudioButton">⏸️ 暂停</button>
+    <button id="resumeAudioButton">🔄 继续</button>
+    <button id="stopAudioButton">⏹️ 停止</button>
+  </div>
+  </div>
+  <p id="status"></p>
+  
+  <div id="progressContainer" style="display: none; margin-top: 10px;">
+    <div style="width: 100%; background: var(--track); border-radius: 4px;">
+      <div id="progressBar" style="width: 0%; height: 12px; background: #4caf50; border-radius: 4px;"></div>
+    </div>
+    <p id="progressText" style="margin: 4px 0 0; font-size: 0.9em;">0%</p>
+    <p id="durationEstimate">预计时长：—</p>
+  </div>
+
+  <!-- Load scripts in dependency order -->
+  <script src="scripts/utils.js"></script>
+  <script src="scripts/audio.js"></script>
+  <script src="scripts/dragdrop.js"></script>
+  <script src="scripts/tss.js"></script>
+  <script src="scripts/settings.js"></script>
+  <script src="scripts/states.js"></script>
+  <script src="scripts/dom.js"></script>
+</body>
+</html>
